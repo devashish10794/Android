@@ -20,8 +20,6 @@ import android.widget.ImageView;
 import android.widget.TextView;
 
 import java.io.InputStream;
-import java.net.HttpURLConnection;
-import java.net.URL;
 import java.util.ArrayList;
 import java.util.Arrays;
 
@@ -40,11 +38,28 @@ public class SearchAdapter extends BaseAdapter {
         this.detail = ticketdata;
     }
 
+    public static Bitmap getclip(Bitmap bitmap) {
+        Bitmap output = Bitmap.createBitmap(bitmap.getWidth(),
+                bitmap.getHeight(), Bitmap.Config.ARGB_8888);
+        Canvas canvas = new Canvas(output);
+        final Paint paint = new Paint();
+        final Rect rect = new Rect(0, 0, bitmap.getWidth(), bitmap.getHeight());
+        final RectF rectF = new RectF(rect);
+        paint.setAntiAlias(true);
+        canvas.drawARGB(0, 0, 0, 0);
+//        canvas.drawOval(rectF, paint);
+        canvas.drawCircle(bitmap.getWidth() / 2, bitmap.getHeight() / 2,
+                bitmap.getWidth() / 2, paint);
+        paint.setXfermode(new PorterDuffXfermode(PorterDuff.Mode.SRC_IN));
+        canvas.drawBitmap(bitmap, rect, rect, paint);
+        bitmap.recycle();
+        return output;
+    }
+
     @Override
     public int getCount() {
         return detail.size();
     }
-
 
     @Override
     public Object getItem(int position) {
@@ -87,7 +102,7 @@ public class SearchAdapter extends BaseAdapter {
             public void onClick(View v) {
                 String searctText = finalHolder.actor.getText().toString();
                 ArrayList<String> items = new ArrayList(Arrays.asList(searctText.split("\\s*,\\s*")));
-                    Appcontroller.searchShow(mContext,items.get(0),"Actor");
+                Appcontroller.searchShow(mContext, items.get(0), "Actor");
 
             }
 
@@ -98,13 +113,14 @@ public class SearchAdapter extends BaseAdapter {
             public void onClick(View v) {
                 String searctText = finalHolder.director.getText().toString();
                 ArrayList<String> items = new ArrayList(Arrays.asList(searctText.split("\\s*,\\s*")));
-                Appcontroller.searchShow(mContext,items.get(0),"Director");
+                Appcontroller.searchShow(mContext, items.get(0), "Director");
 
             }
 
         });
 
-        new ImageLoadTask(detail.get(position).getPoster(), holder.img).execute();
+
+        new DownloadImageTask(holder.img).execute(detail.get(position).getPoster());
         return convertView;
     }
 
@@ -120,55 +136,29 @@ public class SearchAdapter extends BaseAdapter {
 
     }
 
-    public class ImageLoadTask extends AsyncTask<Void, Void, Bitmap> {
-        private String url;
-        private ImageView imageView;
 
-        public ImageLoadTask(String url, ImageView imageView) {
-            this.url = url;
-            this.imageView = imageView;
+    private class DownloadImageTask extends AsyncTask<String, Void, Bitmap> {
+        ImageView bmImage;
+
+        public DownloadImageTask(ImageView bmImage) {
+            this.bmImage = bmImage;
         }
 
-        @Override
-        protected Bitmap doInBackground(Void... params) {
+        protected Bitmap doInBackground(String... urls) {
+            String urldisplay = urls[0];
+            Bitmap mIcon11 = null;
             try {
-                URL urlConnection = new URL(url);
-                HttpURLConnection connection = (HttpURLConnection) urlConnection
-                        .openConnection();
-                connection.setDoInput(true);
-                connection.connect();
-                InputStream input = connection.getInputStream();
-                Bitmap myBitmap = BitmapFactory.decodeStream(input);
-                Bitmap mymap = getclip(myBitmap);
-                return mymap;
+                InputStream in = new java.net.URL(urldisplay).openStream();
+                mIcon11 = BitmapFactory.decodeStream(in);
             } catch (Exception e) {
+                Log.e("Error", e.getMessage());
                 e.printStackTrace();
             }
-            return null;
+            return mIcon11;
         }
 
-        @Override
         protected void onPostExecute(Bitmap result) {
-            super.onPostExecute(result);
-            imageView.setImageBitmap(result);
+            bmImage.setImageBitmap(result);
         }
-    }
-
-    public static Bitmap getclip(Bitmap bitmap) {
-        Bitmap output = Bitmap.createBitmap(bitmap.getWidth(),
-                bitmap.getHeight(), Bitmap.Config.ARGB_8888);
-        Canvas canvas = new Canvas(output);
-        final Paint paint = new Paint();
-        final Rect rect = new Rect(0, 0, bitmap.getWidth(), bitmap.getHeight());
-        final RectF rectF = new RectF(rect);
-        paint.setAntiAlias(true);
-        canvas.drawARGB(0, 0, 0, 0);
-//        canvas.drawOval(rectF, paint);
-        canvas.drawCircle(bitmap.getWidth() / 2, bitmap.getHeight() / 2,
-                bitmap.getWidth() / 2, paint);
-        paint.setXfermode(new PorterDuffXfermode(PorterDuff.Mode.SRC_IN));
-        canvas.drawBitmap(bitmap, rect, rect, paint);
-        bitmap.recycle();
-        return output;
     }
 }
